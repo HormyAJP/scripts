@@ -1,0 +1,40 @@
+#!/usr/bin/env python3
+
+import os
+import subprocess
+import sys
+
+def usage():
+    print("Usage: git open PATH_TO_OPEN_IN_BROWSER")
+
+x = subprocess.check_output(["git", "rev-parse", "--is-inside-work-tree"])
+
+if x.decode().strip() != "true":
+    print("Not a git repo")
+    sys.exit(1)
+
+if len(sys.argv) != 2:
+    usage()
+    sys.exit(1)
+
+path = sys.argv[1]
+blob_or_tree = "blob"
+if os.path.isdir(path):
+    blob_or_tree = "tree"
+elif not os.path.isfile(path):
+    print(f"{path} does not exist")
+    usage()
+    sys.exit(1)
+
+remote = subprocess.check_output(["git", "remote", "-v"]).decode().split("\n")[0].split()[1]
+branch = subprocess.check_output(["git", "rev-parse", "--abbrev-ref", "HEAD"]).decode().strip()
+
+if "git@github.com:" in remote:
+    remote = remote.replace("git@github.com:", "https://github.com/")
+
+remote = remote.replace(".git", "")
+
+url = os.path.join(remote, blob_or_tree, branch, path)
+
+subprocess.check_output(["open", url])
+
